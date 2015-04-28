@@ -16,11 +16,30 @@ package com.shirwa.simplistic_rss;
  * limitations under the License.
  */
 
-public class RssItem {
+import android.util.Log;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+public class RssItem implements Comparable<RssItem> {
+    // Format in RSS : Sat, 18 Apr 2015 05:58:00 +0200
+    public static String XML_DATE_FORMAT = "EEE, d MMM yyyy HH:mm:ss Z";
     String title;
     String description;
     String link;
     String imageUrl;
+    String pubDate;
+    String mp3;
+
+    public String getPubDate() {
+        return pubDate;
+    }
+
+    public void setPubDate(String pubDate) {
+        this.pubDate = pubDate;
+    }
 
     public String getDescription() {
         return description;
@@ -52,5 +71,31 @@ public class RssItem {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getMp3() {
+        return mp3;
+    }
+
+    public void setMp3(String mp3) {
+        this.mp3 = mp3;
+    }
+
+    @Override
+    public int compareTo(RssItem item) {
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat(XML_DATE_FORMAT, Locale.ENGLISH);
+        try {
+            Date dateToCompare = dateFormat.parse(item.getPubDate());
+            Date date = dateFormat.parse(this.getPubDate());
+            return Long.signum(dateToCompare.getTime() - date.getTime());
+
+        } catch (ParseException e) {
+            Log.d("RSS", "date1 "+getPubDate());
+            Log.d("RSS", "date2 "+item.getPubDate());
+            //e.printStackTrace();
+        }
+
+        return 0;
     }
 }

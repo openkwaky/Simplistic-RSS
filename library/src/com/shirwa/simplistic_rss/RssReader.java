@@ -2,6 +2,8 @@ package com.shirwa.simplistic_rss;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+
+import java.util.Collections;
 import java.util.List;
 
 /*
@@ -22,18 +24,54 @@ import java.util.List;
 
 public class RssReader {
     private String rssUrl;
+    private String rssImg;
+    private List<RssItem> rssItems;
+
+    public RssReader() {
+
+    }
 
     public RssReader(String url) {
         rssUrl = url;
+        try {
+            rssItems = parseItems();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public List<RssItem> getItems() throws Exception {
+    public List<RssItem> parseItems() throws Exception {
         SAXParserFactory factory = SAXParserFactory.newInstance();
         SAXParser saxParser = factory.newSAXParser();
         //Creates a new RssHandler which will do all the parsing.
         RssHandler handler = new RssHandler();
         //Pass SaxParser the RssHandler that was created.
         saxParser.parse(rssUrl, handler);
+        rssImg = handler.getRssReader().getRssImg();
         return handler.getRssItemList();
+    }
+
+    /**
+     * Sort rssItems List using the field pubDate
+     * Need to override the compareTo method from RssItem
+     */
+    public void sortList(){
+        Collections.sort(rssItems);
+    }
+
+    public List<RssItem> getRssItems() {
+        return rssItems;
+    }
+
+    public void setRssItems(List<RssItem> rssItems) {
+        this.rssItems = rssItems;
+    }
+
+    public String getRssImg() {
+        return rssImg;
+    }
+
+    public void setRssImg(String rssImg) {
+        this.rssImg = rssImg;
     }
 }

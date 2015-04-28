@@ -26,11 +26,14 @@ import java.util.List;
 
 
 public class RssHandler extends DefaultHandler {
+    private RssReader rssReader;
     private List<RssItem> rssItemList;
     private RssItem currentItem;
     private boolean parsingTitle;
+    private boolean parsingPubDate;
     private boolean parsingLink;
     private boolean parsingDescription;
+    private boolean parsingImage, parsingImageUrl;
 
     public RssHandler() {
         //Initializes a new ArrayList that will hold all the generated RSS items.
@@ -41,11 +44,29 @@ public class RssHandler extends DefaultHandler {
         return rssItemList;
     }
 
+    public RssReader getRssReader() {
+        return rssReader;
+    }
 
-    //Called when an opening tag is reached, such as <item> or <title>
+    /**
+     * Called when an opening tag is reached, such as <item> or <title>
+     *
+     * @param uri
+     * @param localName
+     * @param qName
+     * @param attributes
+     * @throws SAXException
+     */
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-        if (qName.equals("item"))
+        if (qName.equals("image")) {
+            rssReader = new RssReader();
+            parsingImage = true;
+        }
+        else if (qName.equals("url")&&parsingImage) {
+            parsingImageUrl = true;
+        }
+        else if (qName.equals("item"))
             currentItem = new RssItem();
         else if (qName.equals("title"))
             parsingTitle = true;
@@ -53,15 +74,36 @@ public class RssHandler extends DefaultHandler {
             parsingLink = true;
         else if (qName.equals("description"))
             parsingDescription = true;
-        else if (qName.equals("media:thumbnail") || qName.equals("media:content") || qName.equals("image")) {
+        else if (qName.equals("pubDate")){
+            parsingPubDate = true;
+        }
+        else if (qName.equals("media:thumbnail") ||
+                qName.equals("media:content") ||
+                qName.equals("image") ||
+                (qName.equals("enclosure")&&attributes.getValue("type").contains("image"))
+                ) {
             if (attributes.getValue("url") != null)
                 currentItem.setImageUrl(attributes.getValue("url"));
+        } else if (qName.equals("enclosure")&&attributes.getValue("type").contains("audio")){
+            currentItem.setMp3(attributes.getValue("url"));
         }
     }
 
-    //Called when a closing tag is reached, such as </item> or </title>
+    /**
+     * Called when a closing tag is reached, such as </item> or </title>
+     * @param uri
+     * @param localName
+     * @param qName
+     * @throws SAXException
+     */
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
+        if (qName.equals("image")&&parsingImage){
+            parsingImage = false;
+        }
+        if (qName.equals("url")&&parsingImageUrl){
+            parsingImageUrl = false;
+        }
         if (qName.equals("item")) {
             //End of an item so add the currentItem to the list of items.
             rssItemList.add(currentItem);
@@ -72,21 +114,56 @@ public class RssHandler extends DefaultHandler {
             parsingLink = false;
         else if (qName.equals("description"))
             parsingDescription = false;
+        else if (qName.equals("pubDate")){
+            parsingPubDate = false;
+        }
     }
 
-    //Goes through character by character when parsing whats inside of a tag.
+    /**
+     * Goes through character by character when parsing whats inside of a tag.
+     *
+     * @param ch
+     * @param start
+     * @param length
+     * @throws SAXException
+     */
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
         if (currentItem != null) {
             //If parsingTitle is true, then that means we are inside a <title> tag so the text is the title of an item.
-            if (parsingTitle)
-                currentItem.setTitle(new String(ch, start, length));
-                //If parsingLink is true, then that means we are inside a <link> tag so the text is the link of an item.
-            else if (parsingLink)
-                currentItem.setLink(new String(ch, start, length));
-                //If parsingDescription is true, then that means we are inside a <description> tag so the text is the description of an item.
-            else if (parsingDescription)
-                currentItem.setDescription(new String(ch, start, length));
+            if (parsingTitle) {
+                currentItem.setTitle(fillField(currentItem.getTitle(), new String(ch, start, length)));
+            }
+            //If parsingLink is true, then that means we are inside a <link> tag so the text is the link of an item.
+            else if (parsingLink){
+                currentItem.setLink(fillField(currentItem.getLink(), new String(ch, start, length)));
+            }
+            //If parsingDescription is true, then that means we are inside a <description> tag so the text is the description of an item.
+            else if (parsingDescription) {
+                currentItem.setDescription(fillField(currentItem.getDescription(), new String(ch, start, length)));
+            }
+            else if (parsingPubDate) {
+                currentItem.setPubDate(fillField(currentItem.getPubDate(), new String(ch, start, length)));
+            }
+        }
+
+        if (rssReader != null && parsingImageUrl){
+            rssReader.setRssImg(fillField(rssReader.getRssImg(), new String(ch, start, length)));
+        }
+    }
+
+    /**
+     * Avoid the "split" string effect from SAX
+     *
+     * @param currentText
+     * @param newText
+     * @return the complete string
+     */
+    private String fillField(String currentText, String newText){
+        if (currentText != null){
+            return currentText + newText;
+        } else {
+            return newText;
         }
     }
 }
