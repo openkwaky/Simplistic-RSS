@@ -132,23 +132,23 @@ public class RssHandler extends DefaultHandler {
         if (currentItem != null) {
             //If parsingTitle is true, then that means we are inside a <title> tag so the text is the title of an item.
             if (parsingTitle) {
-                currentItem.setTitle(fillField(currentItem.getTitle(), new String(ch, start, length)));
+                currentItem.setTitle(appendField(currentItem.getTitle(), new String(ch, start, length)));
             }
             //If parsingLink is true, then that means we are inside a <link> tag so the text is the link of an item.
             else if (parsingLink){
-                currentItem.setLink(fillField(currentItem.getLink(), new String(ch, start, length)));
+                currentItem.setLink(appendField(currentItem.getLink(), new String(ch, start, length)));
             }
             //If parsingDescription is true, then that means we are inside a <description> tag so the text is the description of an item.
             else if (parsingDescription) {
-                currentItem.setDescription(fillField(currentItem.getDescription(), new String(ch, start, length)));
+                currentItem.setDescription(appendField(currentItem.getDescription(), new String(ch, start, length)));
             }
             else if (parsingPubDate) {
-                currentItem.setPubDate(fillField(currentItem.getPubDate(), new String(ch, start, length)));
+                currentItem.setPubDate(appendField(currentItem.getPubDate(), new String(ch, start, length)));
             }
         }
 
         if (rssReader != null && parsingImageUrl){
-            rssReader.setRssImg(fillField(rssReader.getRssImg(), new String(ch, start, length)));
+            rssReader.setRssImg(appendField(rssReader.getRssImg(), new String(ch, start, length)));
         }
     }
 
@@ -159,7 +159,7 @@ public class RssHandler extends DefaultHandler {
      * @param newText
      * @return the complete string
      */
-    private String fillField(String currentText, String newText){
+    private String appendField(String currentText, String newText){
         if (currentText != null){
             return currentText + newText;
         } else {
